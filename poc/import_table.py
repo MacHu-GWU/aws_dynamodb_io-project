@@ -10,7 +10,7 @@ from boto_session_manager import BotoSesManager
 # ------------------------------------------------------------------------------
 aws_profile = "bmt_app_dev_us_east_1"
 import_id = "import-1"
-import_client_token = "2024-08-01 11:57 PM"
+import_client_token = "2024-08-02 03:42 PM"
 table_name = "aws_dyanmodb_io-import_table_example-person"
 # input_format = "ION"  # ION | DYNAMODB_JSON
 input_format = "DYNAMODB_JSON"  # ION | DYNAMODB_JSON
@@ -38,9 +38,13 @@ def step1_prepare_data():
         {
             "id": 1,
             "name": "Alice",
+            "height": 5.2,
+            "weight": 96,
+            "shoe_size": None,
             "bio": {
                 "dob": "1990-01-01",
                 "address": "123 Main St.",
+                "hobby": None,
             },
             "relationships": [
                 {"name": "Bob", "relation": "friend"},
@@ -115,7 +119,7 @@ if __name__ == "__main__":
     """
     Execute steps one by one.
     """
-    step1_prepare_data()
+    # step1_prepare_data()
     # import_arn = step2_import_table()
-    # import_arn = f"arn:aws:dynamodb:{aws_region}:{aws_account_id}:table/{table_name}/import/01722571027589-49c2e555"
+    # import_arn = f"arn:aws:dynamodb:{aws_region}:{aws_account_id}:table/{table_name}/import/01722627754385-67f5dfbe"
     # step3_wait_import_complete(import_arn)

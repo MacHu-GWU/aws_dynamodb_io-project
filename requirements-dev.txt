@@ -5,6 +5,7 @@ wheel                                   # make pre-compiled distribution package
 build                                   # build distribution package
 pynamodb_mate>=6.0.0.4,<7.0.0.0
 polars>=1.0.0,<2.0.0
+dynamodb-json>=1.4.2,<2.0.0
 amazon.ion>=0.12.0,<1.0.0
 s3pathlib>=2.1.2,<3.0.0
 boto_session_manager>=1.7.2,<2.0.0

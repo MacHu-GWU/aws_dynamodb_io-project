@@ -2,10 +2,9 @@
 
 import typing as T
 import enum
-import json
 import gzip
 import dataclasses
-from datetime import datetime, timezone
+from datetime import datetime
 
 import botocore.exceptions
 
@@ -13,11 +12,7 @@ from .importer import amazon_ion, dynamodb_json
 
 
 from .waiter import Waiter
-from .utils import (
-    parse_s3uri,
-    T_ITEM,
-    T_DATA,
-)
+from .utils import split_s3_uri
 
 
 if T.TYPE_CHECKING:  # pragma: no cover
@@ -253,19 +248,20 @@ def write_amazon_ion(
         "amazon.ion library doesn't work well with DynamoDB import table feature. "
         "Use DynamoDB JSON instead."
     )
+
     # -- this should be the right way to implement it, but it doesn't add the dot
     # -- so that it doesn't work
-    lines = []
-    for record in records:
-        lines.append(amazon_ion.dumps({ITEM: record}, binary=False))
-    lines.append("")
-    content = gzip.compress("\n".join(lines).encode("utf-8"))
+    # lines = []
+    # for record in records:
+    #     lines.append(amazon_ion.dumps({ITEM: record}, binary=False))
+    # lines.append("")
+    # content = gzip.compress("\n".join(lines).encode("utf-8"))
 
     # -- I also tried this hacky way, but it doesn't work either
     # s = amazon_ion.dumps([{ITEM: record} for record in records], binary=False)
     # content = gzip.compress((s + "\n").encode("utf-8"))
 
-    bucket, key = parse_s3uri(s3uri=s3uri)
+    bucket, key = split_s3_uri(s3uri=s3uri)
     return s3_client.put_object(
         Bucket=bucket,
         Key=key,
@@ -298,7 +294,7 @@ def write_dynamodb_json(
         lines.append(f'{{"{ITEM}": {dynamodb_json.dumps(record)}}}')
     lines.append("")
     content = gzip.compress("\n".join(lines).encode("utf-8"))
-    bucket, key = parse_s3uri(s3uri=s3uri)
+    bucket, key = split_s3_uri(s3uri=s3uri)
     return s3_client.put_object(
         Bucket=bucket,
         Key=key,

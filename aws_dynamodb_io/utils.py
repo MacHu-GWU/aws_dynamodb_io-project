@@ -3,13 +3,13 @@
 import typing as T
 
 
-def parse_s3uri(s3uri: str) -> T.Tuple[str, str]:
+def split_s3_uri(s3uri: str) -> T.Tuple[str, str]:
     """
     Parse S3 URI into bucket and key.
 
     Example::
 
-        >>> parse_s3uri("s3://my-bucket/folder/file.txt")
+        >>> split_s3_uri("s3://my-bucket/folder/file.txt")
         ('my-bucket', 'folder/file.txt')
     """
     parts = s3uri.split("/", 3)

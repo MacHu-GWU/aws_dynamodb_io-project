@@ -22,7 +22,6 @@ def test():
     _ = api.write_amazon_ion
     _ = api.write_dynamodb_json
     _ = api.ManifestSummary
-    _ = api.parse_s3uri
     _ = api.ExportStatusEnum
     _ = api.ExportFormatEnum
     _ = api.DataFile
