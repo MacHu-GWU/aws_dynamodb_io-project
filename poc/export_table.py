@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import typing as T
 import time
-import random
 from pathlib import Path
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import polars as pl
 import pynamodb_mate.api as pm
@@ -104,7 +104,7 @@ def step3_export_table() -> str:
         table_arn=table_arn,
         s3_bucket=s3dir_exports.bucket,
         s3_prefix=s3dir_exports.key,
-        export_format="ION",
+        export_format="ION",  # amazon ion is more efficient, we prefer it over DynamoDB JSON
         export_time=export_time,
     )
     export_arn = export_job.arn
@@ -164,6 +164,21 @@ dir_here = Path(__file__).absolute().parent
 path_datalake_parquet = dir_here / "datalake.parquet"
 
 
+def data_file_to_df(
+    data_file: dio.DataFile,
+    converter: T.Callable,
+    schema: T.Dict[str, T.Any],
+) -> pl.DataFrame:
+    if data_file.item_count == 0:
+        raise NotImplementedError
+    records = data_file.read_amazon_ion(
+        s3_client=bsm.s3_client,
+        converter=converter,
+    )
+    df = pl.DataFrame(records, schema=schema)
+    return df
+
+
 def step5_check_export_results(export_arn: str):
     # wait until the export to complete
     export_job = dio.ExportJob.describe_export(
@@ -171,17 +186,35 @@ def step5_check_export_results(export_arn: str):
         export_arn=export_arn,
     )
 
-    # iterate over the records
-    records = list()
-    for record in export_job.read_amazon_ion(
+    # --- method 1
+    # # iterate over the records
+    # records = list()
+    # for record in export_job.read_amazon_ion(
+    #     dynamodb_client=bsm.dynamodb_client,
+    #     s3_client=bsm.s3_client,
+    #     converter=ion_dict_to_py_dict,
+    # ):
+    #     records.append(record)
+    #
+    # # convert to polars DataFrame
+    # df = pl.DataFrame(records, schema=df_schema)
+
+    # --- method 2
+    sub_df_list = list()
+    for data_file in export_job.get_data_files(
         dynamodb_client=bsm.dynamodb_client,
         s3_client=bsm.s3_client,
-        converter=ion_dict_to_py_dict,
     ):
-        records.append(record)
+        if data_file.item_count > 0:
+            sub_df = data_file_to_df(
+                data_file=data_file,
+                converter=ion_dict_to_py_dict,
+                schema=df_schema,
+            )
+            print(sub_df)
+            sub_df_list.append(sub_df)
+    df = pl.concat(sub_df_list)
 
-    # convert to polars DataFrame
-    df = pl.DataFrame(records, schema=df_schema)
     return df
 
 

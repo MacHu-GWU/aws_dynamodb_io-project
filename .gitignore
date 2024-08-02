@@ -1,7 +1,12 @@
 # User Settings
 aws_dynamodb_io.egg-info/
 tmp/
-
+poc/*.ion
+poc/*.json
+poc/*.parquet
+examples/*.ion
+examples/*.json
+examples/*.parquet
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
