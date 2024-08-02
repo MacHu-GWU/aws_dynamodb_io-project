@@ -53,7 +53,10 @@ Welcome to ``aws_dynamodb_io`` Documentation
 .. image:: https://aws-dynamodb-io.readthedocs.io/en/latest/_static/aws_dynamodb_io-logo.png
     :target: https://aws-dynamodb-io.readthedocs.io/en/latest/
 
-Documentation for ``aws_dynamodb_io``.
+See examples:
+
+- `export_table.py <https://github.com/MacHu-GWU/aws_dynamodb_io-project/blob/main/poc/export_table.py>`_
+- `import_table.py <https://github.com/MacHu-GWU/aws_dynamodb_io-project/blob/main/poc/import_table.py>`_
 
 
 .. _install:
