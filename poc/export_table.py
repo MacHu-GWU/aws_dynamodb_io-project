@@ -17,8 +17,10 @@ import aws_dynamodb_io.api as dio
 # ------------------------------------------------------------------------------
 # **Update the following variables**
 # ------------------------------------------------------------------------------
-table_name = "aws_dynamodb_io-export_table_example-person"
 aws_profile = "bmt_app_dev_us_east_1"
+table_name = "aws_dynamodb_io-export_table_example-person"
+export_format = dio.ExportFormatEnum.ION  # ION | DYNAMODB_JSON
+# export_format = dio.ExportFormatEnum.DYNAMODB_JSON  # ION | DYNAMODB_JSON
 
 
 # ------------------------------------------------------------------------------
@@ -37,8 +39,9 @@ table_arn = f"arn:aws:dynamodb:{aws_region}:{aws_account_id}:table/{table_name}"
 
 
 class Bio(pm.MapAttribute):
-    dob = pm.UnicodeAttribute()
-    address = pm.UnicodeAttribute()
+    dob = pm.UnicodeAttribute(null=True)
+    address = pm.UnicodeAttribute(null=True)
+    hobby = pm.UnicodeAttribute(null=True)
 
 
 class Relationship(pm.MapAttribute):
@@ -54,6 +57,9 @@ class Person(pm.Model):
 
     id = pm.NumberAttribute(hash_key=True)
     name = pm.UnicodeAttribute()
+    height = pm.NumberAttribute(null=True)
+    weight = pm.NumberAttribute(null=True)
+    shoe_size = pm.UnicodeAttribute(null=True)
     bio = Bio()
     relationships = pm.ListAttribute(of=Relationship)
 
@@ -74,9 +80,13 @@ def step2_create_dummy_data():
         {
             "id": 1,
             "name": "Alice",
+            "height": 5.2,
+            "weight": 96,
+            "shoe_size": None,
             "bio": {
                 "dob": "1990-01-01",
                 "address": "123 Main St.",
+                "hobby": None,
             },
             "relationships": [
                 {"name": "Bob", "relation": "friend"},
@@ -104,7 +114,7 @@ def step3_export_table() -> str:
         table_arn=table_arn,
         s3_bucket=s3dir_exports.bucket,
         s3_prefix=s3dir_exports.key,
-        export_format="ION",  # amazon ion is more efficient, we prefer it over DynamoDB JSON
+        export_format=export_format.value,
         export_time=export_time,
     )
     export_arn = export_job.arn
@@ -120,65 +130,6 @@ def step4_wait_export_complete(export_arn: str):
     )
 
 
-def ion_dict_to_py_dict(ion_dict: IonPyDict) -> dict:
-    """
-    Define how to convert Ion dict to Python dict.
-    """
-    return {
-        "id": ion_dict["id"],
-        "name": ion_dict["name"],
-        "bio": {
-            "dob": ion_dict["bio"]["dob"],
-            "address": ion_dict["bio"]["address"],
-        },
-        "relationships": [
-            {
-                "name": rel["name"],
-                "relation": rel["relation"],
-            }
-            for rel in ion_dict["relationships"]
-        ],
-    }
-
-
-df_schema = {
-    Person.id.attr_name: pl.Int32(),
-    Person.name.attr_name: pl.Utf8(),
-    Person.bio.attr_name: pl.Struct(
-        {
-            Bio.dob.attr_name: pl.Utf8(),
-            Bio.address.attr_name: pl.Utf8(),
-        }
-    ),
-    Person.relationships.attr_name: pl.List(
-        pl.Struct(
-            {
-                Relationship.name.attr_name: pl.Utf8(),
-                Relationship.relation.attr_name: pl.Utf8(),
-            }
-        )
-    ),
-}
-
-dir_here = Path(__file__).absolute().parent
-path_datalake_parquet = dir_here / "datalake.parquet"
-
-
-def data_file_to_df(
-    data_file: dio.DataFile,
-    converter: T.Callable,
-    schema: T.Dict[str, T.Any],
-) -> pl.DataFrame:
-    if data_file.item_count == 0:
-        raise NotImplementedError
-    records = data_file.read_amazon_ion(
-        s3_client=bsm.s3_client,
-        converter=converter,
-    )
-    df = pl.DataFrame(records, schema=schema)
-    return df
-
-
 def step5_check_export_results(export_arn: str):
     # wait until the export to complete
     export_job = dio.ExportJob.describe_export(
@@ -186,36 +137,16 @@ def step5_check_export_results(export_arn: str):
         export_arn=export_arn,
     )
 
-    # --- method 1
-    # # iterate over the records
-    # records = list()
-    # for record in export_job.read_amazon_ion(
-    #     dynamodb_client=bsm.dynamodb_client,
-    #     s3_client=bsm.s3_client,
-    #     converter=ion_dict_to_py_dict,
-    # ):
-    #     records.append(record)
-    #
-    # # convert to polars DataFrame
-    # df = pl.DataFrame(records, schema=df_schema)
+    # iterate over the records
+    kwargs = dict(dynamodb_client=bsm.dynamodb_client, s3_client=bsm.s3_client)
+    if export_format is dio.ExportFormatEnum.ION:
+        records = list(export_job.read_amazon_ion(**kwargs))
+    elif export_format is dio.ExportFormatEnum.DYNAMODB_JSON:
+        records = list(export_job.read_dynamodb_json(**kwargs))
+    else:  # pragma: no cover
+        raise NotImplementedError
 
-    # --- method 2
-    sub_df_list = list()
-    for data_file in export_job.get_data_files(
-        dynamodb_client=bsm.dynamodb_client,
-        s3_client=bsm.s3_client,
-    ):
-        if data_file.item_count > 0:
-            sub_df = data_file_to_df(
-                data_file=data_file,
-                converter=ion_dict_to_py_dict,
-                schema=df_schema,
-            )
-            print(sub_df)
-            sub_df_list.append(sub_df)
-    df = pl.concat(sub_df_list)
-
-    return df
+    print(records[0])
 
 
 if __name__ == "__main__":
@@ -225,7 +156,9 @@ if __name__ == "__main__":
     # step1_create_table()
     # step2_create_dummy_data()
     # export_arn = step3_export_table()
-    export_arn = f"arn:aws:dynamodb:{aws_region}:{aws_account_id}:table/{table_name}/export/01722567932352-4b251c7e"
+    # --- ION
+    # export_arn = f"arn:aws:dynamodb:{aws_region}:{aws_account_id}:table/{table_name}/export/01722628402072-5950e469"
+    # --- DYNAMODB_JSON
+    # export_arn = f"arn:aws:dynamodb:{aws_region}:{aws_account_id}:table/{table_name}/export/01722628344835-adf2ac26"
     # step4_wait_export_complete(export_arn)
-    df = step5_check_export_results(export_arn)
-    print(df)
+    # step5_check_export_results(export_arn)

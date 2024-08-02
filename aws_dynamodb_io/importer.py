@@ -12,6 +12,13 @@ class FakeAmazonIon:  # pragma: no cover
     def dumps(self, *args, **kwargs):
         raise amazon_ion_error
 
+    def loads(self, *args, **kwargs):
+        raise amazon_ion_error
+
+    @property
+    def IonPyValueModel(self):
+        raise amazon_ion_error
+
 
 dynamodb_json_error = ImportError(
     "You don't have dynamodb-json installed. "
@@ -21,6 +28,9 @@ dynamodb_json_error = ImportError(
 
 
 class FakeDynamoDBJson:  # pragma: no cover
+    def loads(self, *args, **kwargs):
+        raise dynamodb_json_error
+
     def dumps(self, *args, **kwargs):
         raise dynamodb_json_error
 

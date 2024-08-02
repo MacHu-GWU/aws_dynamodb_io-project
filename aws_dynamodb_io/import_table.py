@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
 
+"""
+DynamoDB import from S3 tool box.
+
+Reference:
+
+- DynamoDB data import from Amazon S3: how it works: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/S3DataImport.HowItWorks.html
+"""
+
 import typing as T
 import enum
 import gzip
@@ -9,7 +17,6 @@ from datetime import datetime
 import botocore.exceptions
 
 from .importer import amazon_ion, dynamodb_json
-
 
 from .waiter import Waiter
 from .utils import split_s3_uri
@@ -22,6 +29,9 @@ if T.TYPE_CHECKING:  # pragma: no cover
 
 
 class ImportStatusEnum(str, enum.Enum):
+    """
+    Import job status enumeration.
+    """
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     CANCELLING = "CANCELLING"
@@ -30,6 +40,9 @@ class ImportStatusEnum(str, enum.Enum):
 
 
 class ImportFormatEnum(str, enum.Enum):
+    """
+    Import format enumeration.
+    """
     DYNAMODB_JSON = "DYNAMODB_JSON"
     ION = "ION"
     CSV = "CSV"
@@ -44,7 +57,7 @@ class ImportJob:
 
     - import_table: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb/client/import_table.html
     - describe_import: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb/client/describe_import.html
-    - list_exports: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb/client/list_exports.html
+    - list_imports: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb/client/list_imports.html
     - How it works: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/S3DataImport.HowItWorks.html
     """
 
@@ -222,7 +235,7 @@ def write_amazon_ion(
     s3_client: "S3Client",
 ) -> "PutObjectOutputTypeDef":
     """
-    Write records to S3 for DynamoDB import table.
+    Write records to S3, so that you can import DynamoDB table from S3 later.
 
     This function uses the Amazon Ion format and gzip compression.
 
@@ -277,7 +290,7 @@ def write_dynamodb_json(
     s3_client: "S3Client",
 ) -> "PutObjectOutputTypeDef":
     """
-    Write records to S3 for DynamoDB import table.
+    Write records to S3, so that you can import DynamoDB table from S3 later.
 
     This function uses the DynamoDB JSON format and gzip compression.
 

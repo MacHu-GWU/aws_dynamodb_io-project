@@ -6,12 +6,6 @@ DynamoDB export to S3 tool box.
 Reference:
 
 - DynamoDB data export to Amazon S3: how it works: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/S3DataExport.HowItWorks.html
-
-Usage:
-
-.. code-block:: python
-
-    from aws_dynamodb_export_to_s3 import Export
 """
 
 import typing as T
@@ -23,19 +17,13 @@ from datetime import datetime, timezone
 
 import botocore.exceptions
 
-try:
-    import amazon.ion.simpleion as ion
-    from amazon.ion.simple_types import IonPyDict
-
-    has_amazon_ion = True
-except ImportError:
-    has_amazon_ion = False
+from .importer import amazon_ion, dynamodb_json
 
 
 from .waiter import Waiter
 from .utils import (
-    parse_s3uri,
-    T_ITEM,
+    split_s3_uri,
+    T_DNAMODB_JSON,
     T_DATA,
 )
 
@@ -43,6 +31,7 @@ from .utils import (
 if T.TYPE_CHECKING:  # pragma: no cover
     from mypy_boto3_s3.client import S3Client
     from mypy_boto3_dynamodb.client import DynamoDBClient
+    from amazon.ion.simple_types import IonPyDict
 
 
 def _parse_time(s: str) -> datetime:
@@ -102,10 +91,17 @@ class DataFile:
     s3_bucket: str
     s3_key: str
 
+    @property
+    def s3_uri(self) -> str:
+        """
+        The S3 URI of the data file.
+        """
+        return f"s3://{self.s3_bucket}/{self.s3_key}"
+
     def read_dynamodb_json(
         self,
         s3_client: "S3Client",
-    ) -> T.List[T_ITEM]:
+    ) -> T.List[T_DNAMODB_JSON]:
         """
         Read items from the DynamoDB JSON data file.
 
@@ -130,13 +126,12 @@ class DataFile:
     def read_amazon_ion(
         self,
         s3_client: "S3Client",
-        converter: T.Callable[["IonPyDict"], T_DATA],
-    ) -> T.List[T_DATA]:
+        ion_loads_kwargs: T.Dict[str, T.Any] = None,
+    ) -> T.List["IonPyDict"]:
         """
         Read items from the Amazon ION data file.
 
         :param s3_client: S3 client for reading data.
-        :param converter: Convert Ion dict to Python dict.
 
         Ref: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/S3DataExport.Output.html
 
@@ -154,15 +149,17 @@ class DataFile:
             Key=self.s3_key,
         )
         lines = gzip.decompress(res["Body"].read()).decode("utf-8").splitlines()
-        rows = list()
+        ion_dict_list = list()
+        if ion_loads_kwargs is None:
+            # use BARE to load native Python object
+            ion_loads_kwargs = dict(value_model=amazon_ion.IonPyValueModel.MAY_BE_BARE)
         for line in lines:
             try:
-                ion_dict = ion.loads(line)["Item"]
-                row = converter(ion_dict)
-                rows.append(row)
+                ion_dict = amazon_ion.loads(line, **ion_loads_kwargs)["Item"]
+                ion_dict_list.append(ion_dict)
             except TypeError:
                 pass
-        return rows
+        return ion_dict_list
 
 
 class ExportStatusEnum(str, enum.Enum):
@@ -180,6 +177,13 @@ class ExportFormatEnum(str, enum.Enum):
 class ExportJob:
     """
     The DynamoDB export table job data model.
+
+    Ref:
+
+    - export_table_to_point_in_time: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb/client/export_table_to_point_in_time.html
+    - describe_export: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb/client/describe_export.html
+    - list_exports: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb/client/list_exports.html
+    - How it works: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/S3DataExport.HowItWorks.html
     """
 
     arn: str = dataclasses.field()
@@ -378,7 +382,7 @@ class ExportJob:
         Get the manifest summary of the DynamoDB export.
         """
         self._ensure_details(dynamodb_client=dynamodb_client)
-        bucket, key = parse_s3uri(self.s3uri_export_manifest_summary)
+        bucket, key = split_s3_uri(self.s3uri_export_manifest_summary)
         res = s3_client.get_object(
             Bucket=bucket,
             Key=key,
@@ -407,7 +411,7 @@ class ExportJob:
         Get the list of data files of the DynamoDB export.
         """
         self._ensure_details(dynamodb_client=dynamodb_client)
-        bucket, key = parse_s3uri(self.s3uri_export_manifest_files)
+        bucket, key = split_s3_uri(self.s3uri_export_manifest_files)
         res = s3_client.get_object(
             Bucket=bucket,
             Key=key,
@@ -431,7 +435,7 @@ class ExportJob:
         self,
         dynamodb_client: "DynamoDBClient",
         s3_client: "S3Client",
-    ) -> T.Iterable[T_ITEM]:
+    ) -> T.Iterable[T_DNAMODB_JSON]:
         """
         Read the items of the DynamoDB export. This is a generator function.
         """
@@ -447,8 +451,7 @@ class ExportJob:
         self,
         dynamodb_client: "DynamoDBClient",
         s3_client: "S3Client",
-        converter: T.Callable[["IonPyDict"], T_DATA],
-    ) -> T.Iterable[T_ITEM]:
+    ) -> T.Iterable["IonPyDict"]:
         """
         Read the items of the DynamoDB export. This is a generator function.
         """
@@ -459,7 +462,6 @@ class ExportJob:
         for data_file in data_file_list:
             for item in data_file.read_amazon_ion(
                 s3_client=s3_client,
-                converter=converter,
             ):
                 yield item
 

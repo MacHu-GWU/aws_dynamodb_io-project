@@ -12,8 +12,8 @@ aws_profile = "bmt_app_dev_us_east_1"
 import_id = "import-1"
 import_client_token = "2024-08-02 03:42 PM"
 table_name = "aws_dyanmodb_io-import_table_example-person"
-# input_format = "ION"  # ION | DYNAMODB_JSON
-input_format = "DYNAMODB_JSON"  # ION | DYNAMODB_JSON
+# input_format = dio.ImportFormatEnum.ION  # ION | DYNAMODB_JSON
+input_format = dio.ImportFormatEnum.DYNAMODB_JSON  # ION | DYNAMODB_JSON
 
 # ------------------------------------------------------------------------------
 # Don't change the code below
@@ -58,14 +58,14 @@ def step1_prepare_data():
 
     s3dir_import.delete()
 
-    if input_format == "ION":
+    if input_format is dio.ImportFormatEnum.ION:
         s3path = s3dir_import / "1.ion.gz"
         dio.write_amazon_ion(
             records=records,
             s3uri=s3path.uri,
             s3_client=bsm.s3_client,
         )
-    elif input_format == "DYNAMODB_JSON":
+    elif input_format is dio.ImportFormatEnum.DYNAMODB_JSON:
         s3path = s3dir_import / "1.json.gz"
         dio.write_dynamodb_json(
             records=records,
@@ -77,19 +77,13 @@ def step1_prepare_data():
 
 
 def step2_import_table():
-    if input_format == "ION":
-        InputFormat = dio.ImportFormatEnum.ION.value
-    elif input_format == "DYNAMODB_JSON":
-        InputFormat = dio.ImportFormatEnum.DYNAMODB_JSON.value
-    else:
-        raise NotImplementedError
     res = bsm.dynamodb_client.import_table(
         ClientToken=import_client_token,
         S3BucketSource=dict(
             S3Bucket=s3dir_import.bucket,
             S3KeyPrefix=s3dir_import.key,
         ),
-        InputFormat=InputFormat,
+        InputFormat=input_format.value,
         InputCompressionType="GZIP",
         TableCreationParameters=dict(
             TableName=table_name,

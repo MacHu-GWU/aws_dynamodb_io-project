@@ -20,7 +20,7 @@ def split_s3_uri(s3uri: str) -> T.Tuple[str, str]:
 
 # Represent a DynamoDB JSON data
 # {"key": {"S": "encoded_value"}}
-T_ITEM = T.Dict[str, T.Dict[str, T.Any]]
+T_DNAMODB_JSON = T.Dict[str, T.Dict[str, T.Any]]
 
 # Represent a native Python dictionary data
 T_DATA = T.Dict[str, T.Any]

@@ -5,7 +5,7 @@ from aws_dynamodb_io import api
 
 def test():
     _ = api
-    _ = api.T_ITEM
+    _ = api.T_DNAMODB_JSON
     _ = api.T_DATA
     _ = api.ImportStatusEnum
     _ = api.ImportFormatEnum

@@ -15,6 +15,20 @@ x.y.z (Backlog)
 **Miscellaneous**
 
 
+0.1.2 (2024-08-02)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Features and Improvements**
+
+- Add the following Public APIs:
+    - ``aws_dynamodb_io.api.parse_s3uri``
+- Rename ``aws_dynamodb_io.api.T_ITEM`` to ``aws_dynamodb_io.api.T_DNAMODB_JSON``
+- ``aws_dynamodb_io.api.DataFile.read_amazon_ion`` and ``aws_dynamodb_io.api.ExportJob.read_amazon_ion`` method now returns a list of ``amazon.ion.simple_types.IonPyDict`` object. We leave the decision to the user to convert the IonPyDict object to a Python dictionary or any other data structure as needed.
+
+**Bugfixes**
+
+- Remove unnecessary ``dynamodb-json`` dependency from the ``requirements.txt`` file.
+
+
 0.1.1 (2024-08-01)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
