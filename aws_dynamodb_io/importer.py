@@ -9,7 +9,7 @@ amazon_ion_error = ImportError(
 
 
 class FakeAmazonIon:  # pragma: no cover
-    def dumps(self, **kwargs):
+    def dumps(self, *args, **kwargs):
         raise amazon_ion_error
 
 
@@ -21,7 +21,7 @@ dynamodb_json_error = ImportError(
 
 
 class FakeDynamoDBJson:  # pragma: no cover
-    def dumps(self, **kwargs):
+    def dumps(self, *args, **kwargs):
         raise dynamodb_json_error
 
 
