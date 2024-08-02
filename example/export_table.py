@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import typing as T
 import time
-from pathlib import Path
 from datetime import datetime, timezone
 
-import polars as pl
 import pynamodb_mate.api as pm
 from s3pathlib import S3Path
 from boto_session_manager import BotoSesManager
-from amazon.ion.simple_types import IonPyDict
 
 import aws_dynamodb_io.api as dio
 
