@@ -1,1 +1,3 @@
 # Core dependencies goes here
+boto3
+dynamodb-json>=1.4.2,<2.0.0
