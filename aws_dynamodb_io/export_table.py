@@ -90,6 +90,8 @@ class DataFile:
     etag: str
     s3_bucket: str
     s3_key: str
+    export_arn: str
+    export_format: str
 
     @property
     def s3_uri(self) -> str:
@@ -427,6 +429,8 @@ class ExportJob:
                     etag=data["etag"],
                     s3_bucket=bucket,
                     s3_key=data["dataFileS3Key"],
+                    export_arn=self.arn,
+                    export_format=self.export_format,
                 )
             )
         return data_file_list
