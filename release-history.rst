@@ -15,6 +15,14 @@ x.y.z (Backlog)
 **Miscellaneous**
 
 
+0.1.4 (2024-08-16)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Minor Improvements**
+
+- Add ``client_token``, ``s3_sse_algorithm``, ``s3_sse_kms_key_id``, ``billed_size_bytes``, ``export_type``, ``incremental_export_specification`` attributes to ``ExportJob``
+- Add ``client_token`` attribute to ``ImportJob``.
+
+
 0.1.3 (2024-08-05)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Minor Improvements**

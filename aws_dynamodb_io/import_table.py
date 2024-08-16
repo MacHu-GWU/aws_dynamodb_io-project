@@ -66,6 +66,7 @@ class ImportJob:
     status: str = dataclasses.field()
     table_arn: T.Optional[str] = dataclasses.field(default=None)
     table_id: T.Optional[str] = dataclasses.field(default=None)
+    client_token: T.Optional[str] = dataclasses.field(default=None)
     s3_bucket_owner: T.Optional[str] = dataclasses.field(default=None)
     s3_bucket: T.Optional[str] = dataclasses.field(default=None)
     s3_prefix: T.Optional[str] = dataclasses.field(default=None)
@@ -140,6 +141,7 @@ class ImportJob:
             status=desc["ImportStatus"],
             table_arn=desc.get("TableArn"),
             table_id=desc.get("TableId"),
+            client_token=desc.get("ClientToken"),
             s3_bucket_owner=desc.get("S3BucketSource", {}).get("S3BucketOwner"),
             s3_bucket=desc.get("S3BucketSource", {}).get("S3Bucket"),
             s3_prefix=desc.get("S3BucketSource", {}).get("S3KeyPrefix"),

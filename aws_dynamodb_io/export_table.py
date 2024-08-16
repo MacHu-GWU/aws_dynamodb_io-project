@@ -195,13 +195,19 @@ class ExportJob:
     export_time: T.Optional[datetime] = dataclasses.field(default=None)
     table_arn: T.Optional[str] = dataclasses.field(default=None)
     table_id: T.Optional[str] = dataclasses.field(default=None)
+    client_token: T.Optional[str] = dataclasses.field(default=None)
     s3_bucket: T.Optional[str] = dataclasses.field(default=None)
     s3_prefix: T.Optional[str] = dataclasses.field(default=None)
+    s3_sse_algorithm: T.Optional[str] = dataclasses.field(default=None)
+    s3_sse_kms_key_id: T.Optional[str] = dataclasses.field(default=None)
+    billed_size_bytes: T.Optional[int] = dataclasses.field(default=None)
     item_count: T.Optional[int] = dataclasses.field(default=None)
     export_format: T.Optional[str] = dataclasses.field(default=None)
     failure_code: T.Optional[str] = dataclasses.field(default=None)
     failure_message: T.Optional[str] = dataclasses.field(default=None)
     export_manifest: T.Optional[str] = dataclasses.field(default=None)
+    export_type: T.Optional[str] = dataclasses.field(default=None)
+    incremental_export_specification: T.Optional[dict] = dataclasses.field(default=None)
 
     def __post_init__(self):
         if self.s3_prefix is not None:
@@ -262,13 +268,19 @@ class ExportJob:
             export_time=desc.get("ExportTime"),
             table_arn=desc.get("TableArn"),
             table_id=desc.get("TableId"),
+            client_token=desc.get("ClientToken"),
             s3_bucket=desc.get("S3Bucket"),
             s3_prefix=desc.get("S3Prefix"),
+            s3_sse_algorithm=desc.get("S3SseAlgorithm"),
+            s3_sse_kms_key_id=desc.get("S3SseKmsKeyId"),
+            billed_size_bytes=desc.get("BilledSizeBytes"),
             item_count=desc.get("ItemCount"),
             export_format=desc.get("ExportFormat"),
             failure_code=desc.get("FailureCode"),
             failure_message=desc.get("FailureMessage"),
             export_manifest=desc.get("ExportManifest"),
+            export_type=desc.get("ExportType"),
+            incremental_export_specification=desc.get("IncrementalExportSpecification"),
         )
 
     @classmethod
