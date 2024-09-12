@@ -544,3 +544,49 @@ class ExportJob:
                 raise ValueError(f"Export failed: {export.failure_message}")
             else:
                 pass
+
+    @classmethod
+    def from_s3_dir(
+        cls,
+        s3_client: "S3Client",
+        bucket: str,
+        prefix: str,
+    ):  # pragma: no cover
+        """
+        Unlike describe_export reading from DynamoDB API, it directly reads the
+        export metadata from the S3 folder of a completed export job. The DynamoDB
+        export is only available for 35 days after the export is completed. After
+        that, you can use this method to read the export from S3 directly.
+
+        :param s3_client: The boto3 S3 client
+        :param bucket: The S3 bucket
+        :param prefix: It should have a manifest-summary.json file in it.
+            Example: "my-dynamodb-export/AWSDynamoDB/01725162280092-940349cc/
+        """
+        if prefix.endswith("/") is False:
+            prefix = prefix + "/"
+        # check if it a valid export folder
+        s3_client.head_object(Bucket=bucket, Key=f"{prefix}manifest-files.md5")
+        s3_client.head_object(Bucket=bucket, Key=f"{prefix}manifest-files.json")
+        s3_client.head_object(Bucket=bucket, Key=f"{prefix}manifest-summary.md5")
+        res = s3_client.get_object(Bucket=bucket, Key=f"{prefix}manifest-summary.json")
+        data = json.loads(res["Body"].read().decode("utf-8"))
+        return cls(
+            arn=data["exportArn"],
+            status=ExportStatusEnum.COMPLETED.value,
+            start_time=datetime.strptime(data.get("startTime"), "%Y-%m-%dT%H:%M:%S.%fZ"),
+            end_time=datetime.strptime(data.get("endTime"), "%Y-%m-%dT%H:%M:%S.%fZ"),
+            export_time=datetime.strptime(data.get("exportTime"), "%Y-%m-%dT%H:%M:%S.%fZ"),
+            table_arn=data.get("tableArn"),
+            table_id=data.get("tableId"),
+            s3_bucket=data.get("s3Bucket"),
+            s3_prefix=data.get("s3Prefix"),
+            s3_sse_algorithm=data.get("s3SseAlgorithm"),
+            s3_sse_kms_key_id=data.get("s3SseKmsKeyId"),
+            billed_size_bytes=data.get("billedSizeBytes"),
+            item_count=data.get("itemCount"),
+            export_format=data.get("outputFormat"),
+            export_manifest=data.get("manifestFilesS3Key"),
+            export_type=data.get("exportType"),
+            incremental_export_specification=data.get("IncrementalExportSpecification"),
+        )
