@@ -11,4 +11,5 @@ from .export_table import ManifestSummary
 from .export_table import DataFile
 from .export_table import ExportStatusEnum
 from .export_table import ExportFormatEnum
+from .export_table import ExportTypeEnum
 from .export_table import ExportJob

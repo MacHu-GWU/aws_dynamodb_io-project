@@ -15,11 +15,22 @@ x.y.z (Backlog)
 **Miscellaneous**
 
 
+0.1.6 (2024-09-15)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Features and Improvements**
+
+- Add support to do incremental export in ``ExportJob.export_table_to_point_in_time`` method.
+- Add the following Public APIs:
+    - ``aws_dynamodb_io.api.ExportTypeEnum``
+
+
 0.1.5 (2024-09-12)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
 
 - Add the ``ExportJob.from_s3_dir`` method to create an ``ExportJob`` object from an S3 directory directly.
+- Add the following Public APIs:
+    - ``aws_dynamodb_io.api.ExportJob.from_s3_dir``
 
 
 0.1.4 (2024-08-16)

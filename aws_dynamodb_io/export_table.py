@@ -175,6 +175,11 @@ class ExportFormatEnum(str, enum.Enum):
     ION = "ION"
 
 
+class ExportTypeEnum(str, enum.Enum):
+    FULL_EXPORT  = "FULL_EXPORT"
+    INCREMENTAL_EXPORT = "INCREMENTAL_EXPORT"
+
+
 @dataclasses.dataclass
 class ExportJob:
     """
@@ -493,7 +498,9 @@ class ExportJob:
         s3_sse_algorithm: T.Optional[datetime] = None,
         s3_sse_kms_key_id: T.Optional[datetime] = None,
         export_format: str = ExportFormatEnum.DYNAMODB_JSON.value,
+        export_type: str = ExportTypeEnum.FULL_EXPORT.value,
         client_token: T.Optional[str] = None,
+        incremental_export_specification: T.Optional[dict] = None,
     ):
         """
         Export DynamoDB to point-in-time, and return the export object.
@@ -509,7 +516,9 @@ class ExportJob:
             S3SseAlgorithm=s3_sse_algorithm,
             S3SseKmsKeyId=s3_sse_kms_key_id,
             ExportFormat=export_format,
+            ExportType=export_type,
             ClientToken=client_token,
+            IncrementalExportSpecification=incremental_export_specification,
         )
         kwargs = {k: v for k, v in kwargs.items() if v is not None}
         res = dynamodb_client.export_table_to_point_in_time(**kwargs)
