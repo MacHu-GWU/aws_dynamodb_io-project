@@ -47,17 +47,25 @@ class ManifestSummary:
     The ``manifest-summary.json`` file data model.
     """
 
+    version: str
+    export_arn: str
     table_id: str
     table_arn: str
     s3_bucket: str
     s3_prefix: str
+    s3_sse_algorithm: str
+    s3_sse_kms_key_id: str
     item_count: int
     output_format: str
+    output_view: T.Optional[str]
+    export_from_time_str: T.Optional[str]
+    export_to_time_str: T.Optional[str]
     start_time_str: str
     end_time_str: str
-    export_time_str: str
+    export_time_str: T.Optional[str]
     manifest_files_s3_key: str
     billed_size_bytes: int
+    export_type: str
 
     @property
     def start_time(self) -> datetime:
@@ -70,6 +78,91 @@ class ManifestSummary:
     @property
     def export_time(self) -> datetime:
         return _parse_time(self.export_time_str)
+
+    @property
+    def export_from_time(self) -> datetime:
+        return _parse_time(self.export_from_time_str)
+
+    @property
+    def export_to_time(self) -> datetime:
+        return _parse_time(self.export_to_time_str)
+
+    def is_full_export(self) -> bool:
+        return self.export_type == ExportTypeEnum.FULL_EXPORT.value
+
+    def is_incremental_export(self) -> bool:
+        return self.export_type == ExportTypeEnum.INCREMENTAL_EXPORT.value
+
+    @classmethod
+    def from_dict(cls, data: T_DATA):
+        return cls(
+            version=data["version"],
+            export_arn=data["exportArn"],
+            table_id=data["tableId"],
+            table_arn=data["tableArn"],
+            s3_bucket=data["s3Bucket"],
+            s3_prefix=data["s3Prefix"],
+            s3_sse_algorithm=data["s3SseAlgorithm"],
+            s3_sse_kms_key_id=data.get("s3SseKmsKeyId"),
+            item_count=data["itemCount"],
+            output_format=data["outputFormat"],
+            output_view=data.get("outputView"),
+            export_from_time_str=data.get("exportFromTime"),
+            export_to_time_str=data.get("exportToTime"),
+            start_time_str=data["startTime"],
+            end_time_str=data["endTime"],
+            export_time_str=data.get("exportTime"),
+            manifest_files_s3_key=data["manifestFilesS3Key"],
+            billed_size_bytes=data["billedSizeBytes"],
+            export_type=data["exportType"],
+        )
+
+    def to_dict(self) -> T_DATA:
+        """
+        Convert the object to a dictionary.
+        """
+        if self.is_full_export():
+            return dict(
+                version=self.version,
+                exportArn=self.export_arn,
+                tableId=self.table_id,
+                tableArn=self.table_arn,
+                s3Bucket=self.s3_bucket,
+                s3Prefix=self.s3_prefix,
+                s3SseAlgorithm=self.s3_sse_algorithm,
+                s3SseKmsKeyId=self.s3_sse_kms_key_id,
+                itemCount=self.item_count,
+                outputFormat=self.output_format,
+                startTime=self.start_time_str,
+                endTime=self.end_time_str,
+                exportTime=self.export_time_str,
+                manifestFilesS3Key=self.manifest_files_s3_key,
+                billedSizeBytes=self.billed_size_bytes,
+                exportType=self.export_type,
+            )
+        elif self.is_incremental_export():
+            return dict(
+                version=self.version,
+                exportArn=self.export_arn,
+                tableId=self.table_id,
+                tableArn=self.table_arn,
+                s3Bucket=self.s3_bucket,
+                s3Prefix=self.s3_prefix,
+                s3SseAlgorithm=self.s3_sse_algorithm,
+                s3SseKmsKeyId=self.s3_sse_kms_key_id,
+                itemCount=self.item_count,
+                outputFormat=self.output_format,
+                outputView=self.output_view,
+                exportFromTime=self.export_from_time_str,
+                exportToTime=self.export_to_time_str,
+                startTime=self.start_time_str,
+                endTime=self.end_time_str,
+                manifestFilesS3Key=self.manifest_files_s3_key,
+                billedSizeBytes=self.billed_size_bytes,
+                exportType=self.export_type,
+            )
+        else:  # pragma: no cover
+            raise NotImplementedError
 
 
 @dataclasses.dataclass
@@ -176,7 +269,7 @@ class ExportFormatEnum(str, enum.Enum):
 
 
 class ExportTypeEnum(str, enum.Enum):
-    FULL_EXPORT  = "FULL_EXPORT"
+    FULL_EXPORT = "FULL_EXPORT"
     INCREMENTAL_EXPORT = "INCREMENTAL_EXPORT"
 
 
@@ -407,19 +500,7 @@ class ExportJob:
             Key=key,
         )
         data = json.loads(res["Body"].read().decode("utf-8"))
-        return ManifestSummary(
-            table_id=data["tableId"],
-            table_arn=data["tableArn"],
-            s3_bucket=data["s3Bucket"],
-            s3_prefix=data["s3Prefix"],
-            item_count=data["itemCount"],
-            output_format=data["outputFormat"],
-            start_time_str=data["startTime"],
-            end_time_str=data["endTime"],
-            export_time_str=data["exportTime"],
-            manifest_files_s3_key=data["manifestFilesS3Key"],
-            billed_size_bytes=data["billedSizeBytes"],
-        )
+        return ManifestSummary.from_dict(data)
 
     def get_data_files(
         self,
@@ -583,9 +664,13 @@ class ExportJob:
         return cls(
             arn=data["exportArn"],
             status=ExportStatusEnum.COMPLETED.value,
-            start_time=datetime.strptime(data.get("startTime"), "%Y-%m-%dT%H:%M:%S.%fZ"),
+            start_time=datetime.strptime(
+                data.get("startTime"), "%Y-%m-%dT%H:%M:%S.%fZ"
+            ),
             end_time=datetime.strptime(data.get("endTime"), "%Y-%m-%dT%H:%M:%S.%fZ"),
-            export_time=datetime.strptime(data.get("exportTime"), "%Y-%m-%dT%H:%M:%S.%fZ"),
+            export_time=datetime.strptime(
+                data.get("exportTime"), "%Y-%m-%dT%H:%M:%S.%fZ"
+            ),
             table_arn=data.get("tableArn"),
             table_id=data.get("tableId"),
             s3_bucket=data.get("s3Bucket"),
